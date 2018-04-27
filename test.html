@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+ 
+var gp1,gp2,gp3,gp4;
+
+var current_gamepiece;
+var x=0;
+var bottom_flag=false;
+
+var bt_flaggp,bt_flaga,bt_flagb,bt_flagc=false;
+var fina,finb,finc=false;
+var finx=true;
+
+var sidecrash=false;
+
+var pieces;
+var next;
+var init_first=true;
+var count_first=0;
+var box_count=0;
+
+var ix,iy,hitleft,hitright,hitbottom,iwidth,iheight;
+
+var inventory = [];
+var otherobj;
+var obstacle;
+
+var hitsomething=false;
+var intervalx=100;
+
+//var Inventory : Item[] = new Item[50];
+
+
+//
+function Item(ix,iy,hitleft,hitright,hitbottom,iwidth,iheight){
+
+
+
+	this.ix=ix;
+	this.iy=iy;
+	this.hitleft=hitleft;
+	this.hitright=hitright;
+	this.hitbottom=hitbottom;
+	this.iwidth=iwidth;
+	this.iheight=iheight;
+	
+
+
+
+}
+
+
+
+function  create_shape(){
+
+	next = pieces[Math.round(Math.random(0, pieces.length-1))];
+
+	var gamepiece;
+	
+	switch (next){
+	
+
+		case 1:
+			gamepiece=new component(20, 20, "red", 80,0);
+		break;
+		
+		case 2:
+			gamepiece=new component(40,20,"blue",80,0);
+		break;
+		
+		case 3:
+			gamepiece=new component(60,20,"blue",80,0);
+		break;
+		
+		case 4:
+			gamepiece=new component(80,20,"blue",80,0);
+		break;
+		
+			default:
+	}
+        sidecrash=false;
+        bottom_flag=false;
+
+	return gamepiece;
+
+}
+
+
+
+function startGame() 
+{
+	pieces = [1,2,3,4];
+	current_gamepiece=create_shape();	
+	
+    myGameArea.start();
+}
+
+var myGameArea = 
+{
+    canvas : document.createElement("canvas"),
+    start : function() 
+    {
+        this.canvas.width = 180;
+        this.canvas.height = 240;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.interval = setInterval(updateGameArea, 100);
+    },
+    clear : function()
+	{
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+}
+
+function component(width, height, color, x, y) 
+{
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;   
+    this.speedX = 0;
+    this.speedY = 0;
+	this.has_stopped
+	
+	this.color=color;
+	
+    this.update = function()
+	{
+        
+        ctx = myGameArea.context;
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+		//console.log("update",x++);
+    }
+	
+	this.newPos = function() 
+	{
+            this.x += this.speedX;
+            this.y += this.speedY; 
+            this.hitBottom();
+            this.hitRight();
+            this.hitLeft();
+        } 
+		
+    this.hitBottom = function() 
+	{
+			
+            var rockbottom = myGameArea.canvas.height - this.height;
+            if (this.y > rockbottom) 
+            {
+                this.y = rockbottom;
+				bottom_flag=true;
+				
+				addInventory(this.x,this.y,false,false,true,this.width,this.height);
+				nextblock();
+				//createObstacle();
+				console.log("dddd",+this.width);
+				
+				
+				
+				
+				
+				
+            }
+	}
+	this.hitRight =function()
+	{
+		var rightside = myGameArea.canvas.width - this.width;
+		if (this.x > rightside ) 
+		{
+				//console.log("bflag",bottom_flag);
+					
+					this.x = rightside;
+					
+                    
+                }
+        }
+		
+    this.hitLeft =function()
+	{
+		var leftside = 0;
+		//console.log("ss",this.x);
+		
+		if (this.x <= leftside) 
+		{
+                    this.x = leftside;
+                }
+        }
+        
+     
+    this.crashWith = function(otherobj)
+    {
+            var myleft = this.x;
+            var myright = this.x + (this.width);
+            var mytop = this.y;
+            var mybottom = this.y + (this.height);
+            var otherleft = otherobj.x;
+            var otherright = otherobj.x + (otherobj.width);
+            var othertop = otherobj.y;
+            var otherbottom = otherobj.y + (otherobj.height);
+            var crash = true;
+            sidecrash=false;
+            
+            
+            
+            
+            
+            if(myright==otherleft && mybottom>=othertop ){
+                console.log(" Jack hitright");
+                hitright=true;
+            }
+            
+            if(myleft==otherright && mybottom>=othertop){
+                hitleft=true;
+                console.log("Jack hitleft");
+            }
+            
+            if ((mybottom <= othertop) || (mytop >= otherbottom)||(myright <= otherleft) || (myleft >= otherright) ) 
+            {
+                    console.log(" Jack crash is false");
+                    crash = false;
+                    
+                    
+            }
+            
+            if((myright >= otherleft) && (mybottom > othertop) && (myleft < otherleft) ){
+                
+                console.log("Jack2");
+                  sidecrash=true;
+                  if(myright>otherleft){
+                      this.x=otherleft-this.width;
+                  }
+              }
+              
+             if((myleft <= otherright) && (mybottom > othertop) && (myright > otherright)){
+                 
+                 console.log("Jack3");
+                 sidecrash=true;
+                 if(myleft<otherright){
+                     this.x=otherright;
+                 }
+                 
+             } 
+            
+            
+            if(mybottom == othertop){
+                
+                
+                if((myleft>otherright) || (myright<otherleft)){
+                    
+                    
+                }
+                else{
+                 this.interval = setInterval(updateGameArea, intervalx +200);
+                console.log("jack1",intervalx);
+                 hitbottom=true;
+                
+               
+                inventory.push(new Item(this.x,this.y,hitleft,hitright,hitbottom,this.width,this.height));
+                box_count++;
+                nextblock();
+                    
+                
+                
+                
+                }
+                
+            }
+            
+            if((mybottom == othertop) && ((myright < otherleft)||(myleft >= otherright))){
+                
+//                console.log("jack");
+//                hitbottom=true;
+//                
+//                inventory.push(new Item(this.x,this.y,hitleft,hitright,hitbottom,this.width,this.height));
+//                
+//                nextblock();
+                //bottom_flag=true;
+             //   create_shape();
+            }
+            
+            
+              
+              
+    return crash;
+    }    
+        
+	
+}
+
+
+function addInventory(ix,iy,hitleft,hitright,hitbottom,iwidth,iheight){
+
+
+	inventory.push(new Item(ix,iy,hitleft,hitright,hitbottom,iwidth,iheight));
+
+
+	 box_count++;
+}
+
+
+
+function update_previousblocks(){
+	
+        
+        console.log("storage length :",inventory.length);
+	
+	
+       
+        
+        
+	for(var i=0; i<inventory.length;i++){
+
+	
+	
+	//var x=inventory[i];
+	
+	
+	var x=inventory[i].ix;
+	var y=inventory[i].iy;
+	var w=inventory[i].iwidth;
+	var h=inventory[i].iheight;
+	
+	var gp=new component(w,h,"red",x,y);
+	gp.newPos();
+	gp.update();
+		
+	}
+
+
+}
+
+function nextblock(){
+
+	current_gamepiece=create_shape();
+	
+}
+
+
+/*
+function createObstacle(){
+    
+    var xc,yc,wc,hc;
+    var crashw;
+    
+                for(var i=0; i<=1 ;i++){
+                 
+                 xc=inventory[i].ix;
+                 yc=inventory[i].iy;
+                 wc=inventory[i].iwidth;
+                 hc=inventory[i].iheight;
+                
+                 obstacle=new component(wc,hc,"red",xc,yc);
+                 
+            }
+
+    
+}*/
+
+
+
+function updateGameArea() 
+{
+	
+      //  console.log("UP1");
+        
+      /*  if(!bottom_flag){
+            
+        console.log("Deamon1");
+        myGameArea.clear();
+	current_gamepiece.y+= 1;
+	current_gamepiece.newPos();
+        current_gamepiece.update();
+	
+	console.log("up");
+            
+        }else{ */
+        
+        if(inventory.length>=1){
+            
+            
+        
+        
+            console.log("Inventory.length :",inventory.length);
+            
+            for(var i=0;i<inventory.length;i++){
+                 console.log("Deamon7")                
+                obstacle=new component(inventory[i].iwidth,inventory[i].iheight,"red",inventory[i].ix,inventory[i].iy);
+                
+                if (current_gamepiece.crashWith(obstacle)){
+                  
+                  console.log("Deamon 3");
+                    //create_shape();
+        }
+	
+        
+       
+        
+                
+            }
+            
+            
+          }
+       
+        
+        
+        
+	
+                console.log("Deamon 4");
+		myGameArea.clear();
+	//	obstacle.update();
+		current_gamepiece.y += 1;
+		current_gamepiece.newPos();
+		current_gamepiece.update();
+		
+	
+       
+	
+	if(box_count>0){
+	update_previousblocks();
+	
+        
+        }
+        
+        
+        
+	
+}
+
+
+
+
+
+function moveleft() 
+{
+if(!bottom_flag && !sidecrash)
+        {
+            current_gamepiece.speedX -= 20;
+        }
+
+	
+    
+}
+
+
+
+function moveright() 
+{
+
+    if(!bottom_flag && !sidecrash)
+        {	
+            current_gamepiece.speedX += 20;
+        }	
+	
+}
+
+
+function stopMove()
+{
+    current_gamepiece.speedX = 0;
+    current_gamepiece.speedY = 0; 
+	
+}
+
+</script>
+
+
+<button onmousedown="moveleft()" onmouseup="stopMove()" ontouchstart="moveleft()">LEFT</button>
+<button onmousedown="moveright()" onmouseup="stopMove()" ontouchstart="moveright()">RIGHT</button>
+
+<p>The red square moves one pixel to the right, 50 times per second.</p>
+</body>
+</html>
+
+
